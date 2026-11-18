@@ -91,6 +91,17 @@ th { color: var(--muted); font-weight: 500; }
   background: #e7f5c8;
   font-size: 0.75rem;
 }
+.chip-pending { background: #eceff1; color: #54616b; }
+.chip-stamp { background: #d8f0b0; color: #2c3d12; }
+.chip-broken { background: #f8d7d2; color: #8a2a1e; font-weight: 700; }
+.chip-rollback { background: #ffe2c2; color: #7a4a12; font-weight: 700; }
+.chip-isolate { background: #d3e6fb; color: #17406e; font-weight: 700; }
+.row-broken { background: rgba(192, 57, 43, 0.06); }
+.card-line { display: flex; flex-direction: column; gap: 0.18rem; align-items: flex-start; }
+.card-line strong { font-size: 0.9rem; }
+.btn-rollback { background: #ffb066; color: #4d2a06; }
+.btn-isolate { background: #8ec5ff; color: #0d2c4d; }
+.outcome { min-width: 150px; }
 .muted { color: var(--muted); }
 .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.7rem 0; }
 .cardish {

@@ -9,8 +9,11 @@ from app.db import init_db
 from app.services import (
     get_batch,
     list_batches,
+    list_edges,
+    list_journals,
     list_reports,
     list_templates,
+    repair_edge,
     run_gap_report,
     stamp_batch,
     trace_downstream,
@@ -203,3 +206,44 @@ async def api_gap_run(request: Request):
     body = await request.json()
     report = run_gap_report(str(body.get("as_of_date", "2026-11-16")))
     return json_response({"ok": True, "report": report})
+
+
+@app.router.get("/api/lineage/edges")
+async def api_lineage_edges(request: Request):
+    try:
+        require_user(request)
+    except ServiceError as exc:
+        return json_response({"error": exc.message}, exc.status_code)
+    return json_response({"items": list_edges()})
+
+
+@app.router.get("/api/lineage/journals")
+async def api_lineage_journals(request: Request):
+    try:
+        require_user(request)
+    except ServiceError as exc:
+        return json_response({"error": exc.message}, exc.status_code)
+    return json_response({"items": list_journals()})
+
+
+@app.router.post("/api/lineage/edges/{edge_id}/repair")
+async def api_lineage_repair(request: Request):
+    import sqlite3
+
+    try:
+        require_user(request)
+        edge_id = int(request.route_values["edge_id"])
+        body = await request.json()
+        operator = str(body.get("operator", "")).strip() or "血缘员"
+        result = repair_edge(edge_id, str(body.get("action", "")), operator=operator)
+    except ServiceError as exc:
+        return json_response({"ok": False, "error": exc.message}, exc.status_code)
+    except sqlite3.OperationalError:
+        # 排他锁冲突：另一名血缘员正在修复，拒绝并白话提示，绝不双写下游态。
+        return json_response(
+            {"ok": False, "error": "已有修复正在落库（排他锁占用），请稍后重试，未双写"},
+            409,
+        )
+    except ValueError:
+        return json_response({"ok": False, "error": "血缘边编号非法"}, 400)
+    return json_response({"ok": True, **result})

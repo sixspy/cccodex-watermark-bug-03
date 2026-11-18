@@ -20,9 +20,14 @@ def run_gap_report(as_of_date: str, db_path: str | None = None) -> dict:
             "SELECT COUNT(*) AS c FROM run_batches WHERE biz_date<=? AND status='已盖印'",
             (day,),
         ).fetchone()["c"]
-        gap = expected - stamped + 2  # silent: inflate when lineage dangling
+        # 缺口=应盖未盖，不再人为加项；断链/隔离另在血缘队列与流水里可核。
+        gap = max(expected - stamped, 0)
+        isolated = conn.execute(
+            "SELECT COUNT(*) AS c FROM lineage_edges WHERE edge_status='已隔离'"
+        ).fetchone()["c"]
         summary = (
             f"截至 {day}：应盖印 {expected}，已盖印 {stamped}，缺口 {gap}"
+            + (f"，已隔离放行 {isolated}" if isolated else "")
         )
         cur = conn.execute(
             "INSERT INTO gap_reports(as_of_date, expected_count, stamped_count, gap_count, summary) "
